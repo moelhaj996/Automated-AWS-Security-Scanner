@@ -23,24 +23,6 @@ A comprehensive security auditing tool for AWS resources that helps identify pot
   - Finds unencrypted databases
   - Reports encryption status for all instances
 
-## Installation
-
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/aws-security-scanner.git
-cd aws-security-scanner
-```
-
-2. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-3. Configure AWS credentials:
-```bash
-aws configure
-```
-
 ## Usage
 
 Basic usage:
