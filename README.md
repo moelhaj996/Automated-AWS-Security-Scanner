@@ -1,113 +1,88 @@
 # AWS Security Scanner
 
-A Python-based security auditing tool for AWS infrastructure that automatically detects and reports security misconfigurations. This tool helps security teams and DevOps engineers maintain a secure AWS environment through automated scanning and reporting.
+A comprehensive Python-based security auditing tool for AWS infrastructure that automatically detects and reports potential security misconfigurations. This tool helps DevSecOps teams maintain a secure AWS environment through automated scanning and detailed reporting.
 
 ## 🔍 Core Features
 
+The AWS Security Scanner performs automated security checks across multiple AWS services:
+
 ### S3 Bucket Security
-```python
-def check_s3_buckets(self):
-    # Scans S3 buckets for:
-    # - Public access through ACLs
-    # - Public bucket policies
-    # - Misconfigured permissions
-```
 - Detects publicly accessible buckets
-- Identifies risky bucket policies
-- Supports automatic remediation
-- Handles exceptions gracefully
+- Identifies bucket policy misconfigurations
+- Validates bucket encryption settings
+- Reports security findings with severity levels
 
 ### Security Group Analysis
-```python
-def check_security_groups(self, region):
-    # Analyzes security groups for:
-    # - Open SSH (22) and RDP (3389) ports
-    # - 0.0.0.0/0 CIDR rules
-    # - Overly permissive inbound rules
-```
-- Finds dangerous inbound rules
-- Multi-region security group scanning
+- Scans for open ports and risky rules
+- Identifies overly permissive inbound rules
+- Supports multi-region security group scanning
 - Reports critical security gaps
-- Identifies exposed ports
 
-### IAM Security Checks
-```python
-def check_iam_policies(self):
-    # Reviews IAM configurations:
-    # - Overly permissive policies
-    # - Dangerous wildcards (Action: "*")
-    # - Access key rotation
-```
-- Analyzes policy permissions
-- Checks access key age
-- Identifies risky configurations
-- Supports large-scale IAM audits
+### IAM Security Verification
+- Monitors access key age and rotation
+- Identifies inactive or expired credentials
+- Supports automated key rotation
+- Provides detailed IAM security reports
 
-### RDS Security Verification
-```python
-def check_rds_encryption(self, region):
-    # Verifies RDS security:
-    # - Encryption status
-    # - Multi-region scanning
-    # - Security warnings
-```
-- Checks database encryption
-- Multi-region support
-- Clear security reporting
-- Exception handling
+### RDS Security Checks
+- Verifies database encryption status
+- Validates security group configurations
+- Supports multi-region scanning
+- Reports encryption compliance status
 
 ## 📊 Architecture
 
-### Component Diagram
 ```mermaid
 graph TB
-    CLI[Command Line Interface] --> Scanner[Security Scanner]
-    Scanner --> S3[S3 Checker]
-    Scanner --> EC2[Security Group Checker]
-    Scanner --> IAM[IAM Policy Checker]
-    Scanner --> RDS[RDS Checker]
-    
-    S3 --> AWS((AWS API))
-    EC2 --> AWS
-    IAM --> AWS
-    RDS --> AWS
-    
-    Scanner --> Report[Report Generator]
-    Report --> CSV[findings.csv]
-    Report --> Console[Colored Console Output]
-```
+    subgraph "User Interface"
+        CLI[Command Line Interface]
+    end
 
-**Component Explanation:**
-1. **CLI**: Command-line interface for running scans
-2. **Scanner**: Core engine that coordinates security checks
-3. **Checkers**: Individual modules for each AWS service
-4. **AWS API**: Interface with AWS services via boto3
-5. **Report Generator**: Creates findings reports
+    subgraph "Core Scanner"
+        Scanner[Security Scanner]
+        Config[Configuration]
+    end
 
-### Security Check Flow
-```mermaid
-graph TD
-    subgraph Initialization
-        CLI[CLI Arguments] -->|Configure| Init[Scanner Initialization]
-        Init -->|Set| Regions[Region List]
-        Init -->|Set| Fix[Fix Issues Flag]
+    subgraph "Security Checks"
+        S3[S3 Security Check]
+        SG[Security Group Check]
+        IAM[IAM Security Check]
+        RDS[RDS Security Check]
     end
+
+    subgraph "AWS Integration"
+        Boto3[AWS SDK - boto3]
+    end
+
+    subgraph "Output"
+        Report[Report Generator]
+        CSV[findings.csv]
+        Console[Console Output]
+    end
+
+    CLI --> Scanner
+    Scanner --> Config
+    Scanner --> S3
+    Scanner --> SG
+    Scanner --> IAM
+    Scanner --> RDS
     
-    subgraph Security Checks
-        Scanner[Run Scan] -->|Check| S3[S3 Buckets]
-        Scanner -->|Check| SG[Security Groups]
-        Scanner -->|Check| IAM[IAM Policies]
-        Scanner -->|Check| RDS[RDS Encryption]
-        Scanner -->|Check| Keys[IAM Access Keys]
-    end
+    S3 --> Boto3
+    SG --> Boto3
+    IAM --> Boto3
+    RDS --> Boto3
     
-    subgraph Reporting
-        Findings[Security Findings] -->|Write| CSV[findings.csv]
-        Findings -->|Display| Console[Console Output]
-    end
+    Scanner --> Report
+    Report --> CSV
+    Report --> Console
 ```
 
 ## 🚀 Quick Start
+
+### Prerequisites
+- Python 3.8 or higher
+- AWS credentials configured (`~/.aws/credentials` or environment variables)
+- Required AWS permissions (see below)
 
 ### Installation
 ```bash
@@ -123,37 +98,21 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### Basic Usage
+### Usage
 ```bash
 # Basic scan in default region
 python src/aws_security_scanner.py
 
-# Multi-region scan
+# Scan specific regions
 python src/aws_security_scanner.py --regions us-east-1 us-west-2
 
-# Scan with auto-fix enabled
-python src/aws_security_scanner.py --fix
-```
-
-## 📝 Report Format
-
-The scanner generates two types of output:
-
-1. **Console Output**
-```
-[CRITICAL] S3: Bucket has public access (my-bucket)
-[WARNING] IAM: Access key is 95 days old (user/AKIA...)
-[CRITICAL] EC2: Security group allows SSH from anywhere (sg-123...)
-```
-
-2. **CSV Report** (findings.csv)
-```csv
-service,resource_id,issue,severity,timestamp
-S3,my-bucket,Public access enabled,CRITICAL,2024-04-04T16:00:00
-IAM,user/key-id,Access key age > 90 days,WARNING,2024-04-04T16:00:00
+# View detailed help
+python src/aws_security_scanner.py --help
 ```
 
 ## 🔑 Required AWS Permissions
+
+The scanner requires the following AWS permissions:
 
 ```json
 {
@@ -165,13 +124,12 @@ IAM,user/key-id,Access key age > 90 days,WARNING,2024-04-04T16:00:00
                 "s3:ListAllMyBuckets",
                 "s3:GetBucketAcl",
                 "s3:GetBucketPolicy",
-                "s3:PutBucketPublicAccessBlock",
                 "ec2:DescribeSecurityGroups",
+                "ec2:DescribeRegions",
                 "rds:DescribeDBInstances",
-                "iam:ListPolicies",
-                "iam:GetPolicyVersion",
                 "iam:ListUsers",
-                "iam:ListAccessKeys"
+                "iam:ListAccessKeys",
+                "iam:GetAccessKeyLastUsed"
             ],
             "Resource": "*"
         }
@@ -179,38 +137,49 @@ IAM,user/key-id,Access key age > 90 days,WARNING,2024-04-04T16:00:00
 }
 ```
 
-## 🛠️ Dependencies
+## 📝 Output Format
 
-- **boto3**: AWS SDK for Python
-- **colorama**: Cross-platform colored terminal output
-- **python-dateutil**: Date handling utilities
-
-## 🐛 Error Handling
-
-The scanner includes robust error handling:
-```python
-try:
-    # AWS API calls with proper error handling
-    s3_client.get_bucket_policy(Bucket=bucket_name)
-except s3_client.exceptions.NoSuchBucketPolicy:
-    # Handle missing bucket policy
-    pass
-except Exception as e:
-    # Handle other AWS API errors
-    print(f"Error: {str(e)}")
+### Console Output
+The scanner provides real-time feedback with color-coded severity levels:
+```
+[CRITICAL] S3: Public access detected in bucket 'example-bucket'
+[WARNING] IAM: Access key 'AKIA...' is 95 days old
+[INFO] RDS: All instances are encrypted in region 'us-east-1'
 ```
 
-- Graceful handling of API errors
-- Clear error messages
+### CSV Report
+A detailed findings report is generated in `findings.csv`:
+```csv
+service,resource_id,issue,severity,timestamp
+S3,example-bucket,Public access enabled,CRITICAL,2024-04-04T16:00:00
+IAM,AKIA...,Access key age > 90 days,WARNING,2024-04-04T16:00:00
+RDS,db-instance-1,Encryption enabled,INFO,2024-04-04T16:00:00
+```
+
+## 🛠️ Error Handling
+
+The scanner implements comprehensive error handling:
+- Graceful handling of AWS API errors
+- Clear error messages with context
 - Continued operation after non-critical errors
-- Proper exception logging
+- Detailed logging for troubleshooting
 
-## 🤝 Contributing
+Example error handling:
+```python
+try:
+    response = s3_client.get_bucket_policy(Bucket=bucket_name)
+except s3_client.exceptions.NoSuchBucketPolicy:
+    logger.info(f"No bucket policy found for {bucket_name}")
+except Exception as e:
+    logger.error(f"Error checking bucket {bucket_name}: {str(e)}")
+```
 
-1. Fork the repository
-2. Create a feature branch
-3. Write tests for your changes
-4. Submit a pull request
+## 📚 Dependencies
+
+Core dependencies:
+- `boto3`: AWS SDK for Python
+- `colorama`: Cross-platform colored terminal text
+- `python-dateutil`: Date handling utilities
 
 ## 📄 License
 
