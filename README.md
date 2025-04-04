@@ -34,41 +34,28 @@ The AWS Security Scanner performs automated security checks across multiple AWS 
 
 ```mermaid
 flowchart TB
-    subgraph input[Input]
-        CLI[Command Line Interface]
-        CLI --> Scanner[Security Scanner]
-    end
+    CLI[Command Line Interface] --> Scanner[AWS Security Scanner]
+    
+    Scanner --> S3[S3 Security]
+    Scanner --> SG[Security Groups]
+    Scanner --> IAM[IAM Security]
+    Scanner --> RDS[RDS Security]
+    
+    S3 --> Report[Report Generator]
+    SG --> Report
+    IAM --> Report
+    RDS --> Report
+    
+    Report --> Output[Security Findings]
 
-    subgraph checks[Security Checks]
-        Scanner --> S3[S3 Bucket Check]
-        Scanner --> SG[Security Group Check]
-        Scanner --> IAM[IAM Check]
-        Scanner --> RDS[RDS Check]
-    end
-
-    subgraph validations[Security Validations]
-        S3 --> S3_1[Public ACLs]
-        S3 --> S3_2[Bucket Policies]
-        
-        SG --> SG_1[Open Ports 22, 3389]
-        SG --> SG_2[0.0.0.0/0 Rules]
-        
-        IAM --> IAM_1[Policy Permissions]
-        IAM --> IAM_2[Access Key Age]
-        
-        RDS --> RDS_1[Encryption Status]
-    end
-
-    subgraph output[Report Generation]
-        S3_1 & S3_2 & SG_1 & SG_2 & IAM_1 & IAM_2 & RDS_1 --> Report[Report Generator]
-        Report --> CSV[findings.csv]
-        Report --> Console[Console Output]
-    end
-
-    style input fill:#1a1a1a,stroke:#333,stroke-width:2px
-    style checks fill:#1a1a1a,stroke:#333,stroke-width:2px
-    style validations fill:#1a1a1a,stroke:#333,stroke-width:2px
-    style output fill:#1a1a1a,stroke:#333,stroke-width:2px
+    style CLI fill:#1a1a1a,stroke:#333,stroke-width:2px
+    style Scanner fill:#1a1a1a,stroke:#333,stroke-width:2px
+    style S3 fill:#1a1a1a,stroke:#333,stroke-width:2px
+    style SG fill:#1a1a1a,stroke:#333,stroke-width:2px
+    style IAM fill:#1a1a1a,stroke:#333,stroke-width:2px
+    style RDS fill:#1a1a1a,stroke:#333,stroke-width:2px
+    style Report fill:#1a1a1a,stroke:#333,stroke-width:2px
+    style Output fill:#1a1a1a,stroke:#333,stroke-width:2px
 ```
 
 ## 🚀 Quick Start
