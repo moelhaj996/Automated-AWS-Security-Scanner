@@ -34,47 +34,15 @@ The AWS Security Scanner performs automated security checks across multiple AWS 
 
 ```mermaid
 graph TB
-    subgraph "User Interface"
-        CLI[Command Line Interface]
-    end
-
-    subgraph "Core Scanner"
-        Scanner[Security Scanner]
-        Config[Configuration]
-    end
-
-    subgraph "Security Checks"
-        S3[S3 Security Check]
-        SG[Security Group Check]
-        IAM[IAM Security Check]
-        RDS[RDS Security Check]
-    end
-
-    subgraph "AWS Integration"
-        Boto3[AWS SDK - boto3]
-    end
-
-    subgraph "Output"
-        Report[Report Generator]
-        CSV[findings.csv]
-        Console[Console Output]
-    end
-
-    CLI --> Scanner
-    Scanner --> Config
-    Scanner --> S3
-    Scanner --> SG
-    Scanner --> IAM
-    Scanner --> RDS
+    CLI[Command Line Interface] --> Scanner[AWS Security Scanner]
     
-    S3 --> Boto3
-    SG --> Boto3
-    IAM --> Boto3
-    RDS --> Boto3
+    Scanner --> S3[S3 Security]
+    Scanner --> SG[Security Groups]
+    Scanner --> IAM[IAM Security]
+    Scanner --> RDS[RDS Security]
     
-    Scanner --> Report
-    Report --> CSV
-    Report --> Console
+    S3 & SG & IAM & RDS --> Report[Report Generator]
+    Report --> Output[Security Findings]
 ```
 
 ## 🚀 Quick Start
