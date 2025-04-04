@@ -1,27 +1,38 @@
 # AWS Security Scanner
 
-A comprehensive security auditing tool for AWS resources that helps identify potential security risks and misconfigurations in your AWS infrastructure.
+A Python-based security auditing tool that automatically identifies security risks and misconfigurations in your AWS infrastructure. The tool performs comprehensive security checks across multiple AWS services and provides detailed reports with severity-based findings.
 
 ## Features
 
-- **S3 Bucket Security Checks**
-  - Identifies publicly accessible buckets
-  - Detects misconfigured bucket policies
-  - Can automatically fix public access issues
+### S3 Bucket Security Checks
+- ✅ Detects publicly accessible buckets through ACL permissions
+- ✅ Identifies buckets with public bucket policies
+- ✅ Optional automatic remediation of public access issues
+- ✅ Handles bucket policy exceptions gracefully
 
-- **Security Group Analysis**
-  - Finds security groups with dangerous inbound rules
-  - Detects open SSH (22) and RDP (3389) ports
-  - Identifies overly permissive rules (0.0.0.0/0)
+### Security Group Analysis
+- ✅ Identifies dangerous inbound rules (0.0.0.0/0)
+- ✅ Detects open SSH (port 22) and RDP (port 3389) access
+- ✅ Scans security groups across multiple regions
+- ✅ Reports CRITICAL findings for dangerous configurations
 
-- **IAM Security Audit**
-  - Discovers overly permissive IAM policies
-  - Identifies old access keys (>90 days)
-  - Reports policies with dangerous wildcards
+### IAM Security Audit
+- ✅ Analyzes IAM policies for overly permissive rules
+- ✅ Detects use of dangerous wildcards (Action: "*")
+- ✅ Identifies access keys older than 90 days
+- ✅ Supports pagination for large IAM policy sets
 
-- **RDS Security Checks**
-  - Finds unencrypted databases
-  - Reports encryption status for all instances
+### RDS Security Verification
+- ✅ Checks encryption status of RDS instances
+- ✅ Multi-region RDS instance scanning
+- ✅ Reports unencrypted databases as security warnings
+- ✅ Handles RDS API exceptions gracefully
+
+### Reporting Capabilities
+- ✅ CSV report generation with detailed findings
+- ✅ Color-coded console output (RED: CRITICAL, YELLOW: WARNING)
+- ✅ Timestamp tracking for all findings
+- ✅ Structured output format for easy parsing
 
 ## Project Architecture
 
@@ -40,62 +51,78 @@ graph TB
     RDS --> AWS
     
     Scanner --> Report[Report Generator]
-    Report --> CSV[CSV Report]
-    Report --> Console[Console Output]
+    Report --> CSV[findings.csv]
+    Report --> Console[Colored Console Output]
+
+    style Scanner fill:#f9f,stroke:#333,stroke-width:2px
+    style AWS fill:#bbf,stroke:#333,stroke-width:2px
+    style Report fill:#bfb,stroke:#333,stroke-width:2px
 ```
 
-### Workflow Diagram
+### Security Check Flow
 ```mermaid
-sequenceDiagram
-    participant User
-    participant Scanner
-    participant AWS
-    participant Report
+graph TD
+    subgraph Initialization
+        CLI[CLI Arguments] -->|Configure| Init[Scanner Initialization]
+        Init -->|Set| Regions[Region List]
+        Init -->|Set| Fix[Fix Issues Flag]
+    end
+    
+    subgraph Security Checks
+        Scanner[Run Scan] -->|Check| S3[S3 Buckets]
+        Scanner -->|Check| SG[Security Groups]
+        Scanner -->|Check| IAM[IAM Policies]
+        Scanner -->|Check| RDS[RDS Encryption]
+        Scanner -->|Check| Keys[IAM Access Keys]
+    end
+    
+    subgraph Reporting
+        Findings[Security Findings] -->|Write| CSV[findings.csv]
+        Findings -->|Display| Console[Console Output]
+    end
 
-    User->>Scanner: Run security scan
-    Scanner->>AWS: Check S3 buckets
-    AWS-->>Scanner: Return bucket configs
-    Scanner->>AWS: Check security groups
-    AWS-->>Scanner: Return SG rules
-    Scanner->>AWS: Check IAM policies
-    AWS-->>Scanner: Return IAM configs
-    Scanner->>AWS: Check RDS encryption
-    AWS-->>Scanner: Return RDS status
-    Scanner->>Report: Generate findings
-    Report-->>User: Display results
-    Report->>CSV: Save findings.csv
+    style Initialization fill:#f9f,stroke:#333,stroke-width:2px
+    style Security Checks fill:#bbf,stroke:#333,stroke-width:2px
+    style Reporting fill:#bfb,stroke:#333,stroke-width:2px
 ```
 
-### Lambda Deployment
-```mermaid
-graph LR
-    Event[CloudWatch Event] -->|Trigger| Lambda[AWS Lambda]
-    Lambda -->|Run| Scanner[Security Scanner]
-    Scanner -->|Check| Resources[AWS Resources]
-    Scanner -->|Generate| Report[Security Report]
-    Report -->|Store| S3[S3 Bucket]
+## Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/aws-security-scanner.git
+cd aws-security-scanner
+```
+
+2. Create a virtual environment:
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
+
+3. Install dependencies:
+```bash
+pip install -r requirements.txt
 ```
 
 ## Usage
 
-Basic usage:
+### Basic Scan
 ```bash
 python src/aws_security_scanner.py
 ```
 
-Scan multiple regions:
+### Multi-Region Scan
 ```bash
 python src/aws_security_scanner.py --regions us-east-1 us-west-2 eu-west-1
 ```
 
-Enable automatic fixes:
+### Scan with Auto-Fix
 ```bash
 python src/aws_security_scanner.py --fix
 ```
 
-## Required IAM Permissions
-
-The scanner requires the following IAM permissions:
+## Required AWS Permissions
 
 ```json
 {
@@ -121,79 +148,36 @@ The scanner requires the following IAM permissions:
 }
 ```
 
-## Deploying as AWS Lambda
+## Output Format
 
-1. Create a ZIP package:
-```bash
-zip -r scanner.zip src/ requirements.txt
-```
+The tool generates a CSV report (`findings.csv`) with the following columns:
+- `service`: AWS service (S3, EC2, IAM, RDS)
+- `resource_id`: Identifier of the resource
+- `issue`: Description of the security issue
+- `severity`: CRITICAL or WARNING
+- `timestamp`: When the issue was detected
 
-2. Create a Lambda function using the following Terraform configuration:
+## Dependencies
 
-```hcl
-resource "aws_iam_role" "scanner_role" {
-  name = "security_scanner_role"
+- Python 3.10+
+- boto3
+- colorama
+- python-dateutil
 
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "lambda.amazonaws.com"
-        }
-      }
-    ]
-  })
-}
+## Error Handling
 
-resource "aws_iam_role_policy_attachment" "scanner_policy" {
-  role       = aws_iam_role.scanner_role.name
-  policy_arn = "arn:aws:iam::aws:policy/SecurityAudit"
-}
-
-resource "aws_lambda_function" "security_scanner" {
-  filename         = "scanner.zip"
-  function_name    = "aws_security_scanner"
-  role            = aws_iam_role.scanner_role.arn
-  handler         = "src.aws_security_scanner.lambda_handler"
-  runtime         = "python3.10"
-  timeout         = 300
-
-  environment {
-    variables = {
-      REGIONS = "us-east-1,us-west-2"
-    }
-  }
-}
-
-resource "aws_cloudwatch_event_rule" "daily_scan" {
-  name                = "daily_security_scan"
-  description         = "Trigger security scanner daily"
-  schedule_expression = "rate(1 day)"
-}
-
-resource "aws_cloudwatch_event_target" "scan" {
-  rule      = aws_cloudwatch_event_rule.daily_scan.name
-  target_id = "SecurityScan"
-  arn       = aws_lambda_function.security_scanner.arn
-}
-```
-
-## Running Tests
-
-```bash
-pytest tests/
-```
+The scanner includes comprehensive error handling:
+- Graceful handling of missing bucket policies
+- Region-specific service availability
+- API rate limiting and throttling
+- Access permission issues
 
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+3. Implement your changes with tests
+4. Submit a pull request
 
 ## License
 
