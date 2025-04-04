@@ -23,6 +23,59 @@ A comprehensive security auditing tool for AWS resources that helps identify pot
   - Finds unencrypted databases
   - Reports encryption status for all instances
 
+## Project Architecture
+
+### Component Diagram
+```mermaid
+graph TB
+    CLI[Command Line Interface] --> Scanner[Security Scanner]
+    Scanner --> S3[S3 Checker]
+    Scanner --> EC2[Security Group Checker]
+    Scanner --> IAM[IAM Policy Checker]
+    Scanner --> RDS[RDS Checker]
+    
+    S3 --> AWS((AWS API))
+    EC2 --> AWS
+    IAM --> AWS
+    RDS --> AWS
+    
+    Scanner --> Report[Report Generator]
+    Report --> CSV[CSV Report]
+    Report --> Console[Console Output]
+```
+
+### Workflow Diagram
+```mermaid
+sequenceDiagram
+    participant User
+    participant Scanner
+    participant AWS
+    participant Report
+
+    User->>Scanner: Run security scan
+    Scanner->>AWS: Check S3 buckets
+    AWS-->>Scanner: Return bucket configs
+    Scanner->>AWS: Check security groups
+    AWS-->>Scanner: Return SG rules
+    Scanner->>AWS: Check IAM policies
+    AWS-->>Scanner: Return IAM configs
+    Scanner->>AWS: Check RDS encryption
+    AWS-->>Scanner: Return RDS status
+    Scanner->>Report: Generate findings
+    Report-->>User: Display results
+    Report->>CSV: Save findings.csv
+```
+
+### Lambda Deployment
+```mermaid
+graph LR
+    Event[CloudWatch Event] -->|Trigger| Lambda[AWS Lambda]
+    Lambda -->|Run| Scanner[Security Scanner]
+    Scanner -->|Check| Resources[AWS Resources]
+    Scanner -->|Generate| Report[Security Report]
+    Report -->|Store| S3[S3 Bucket]
+```
+
 ## Usage
 
 Basic usage:
