@@ -236,3 +236,94 @@ findings = [
         'timestamp': '2024-04-04T16:00:01'
     }
 ] 
+```
+
+## Architecture Overview
+
+```mermaid
+graph TB
+    subgraph Input
+        CLI[Command Line Interface] --> Scanner[Security Scanner]
+    end
+
+    subgraph "Security Checks"
+        Scanner --> S3[S3 Bucket Check]
+        Scanner --> SG[Security Group Check]
+        Scanner --> IAM[IAM Check]
+        Scanner --> RDS[RDS Check]
+
+        S3 --> S3_1[Public ACLs]
+        S3 --> S3_2[Bucket Policies]
+        
+        SG --> SG_1[Open Ports<br>22, 3389]
+        SG --> SG_2[0.0.0.0/0 Rules]
+        
+        IAM --> IAM_1[Policy Permissions]
+        IAM --> IAM_2[Access Key Age]
+        
+        RDS --> RDS_1[Encryption Status]
+    end
+
+    subgraph "Findings"
+        S3_1 & S3_2 --> Report[Report Generator]
+        SG_1 & SG_2 --> Report
+        IAM_1 & IAM_2 --> Report
+        RDS_1 --> Report
+        
+        Report --> CSV[findings.csv]
+        Report --> Console[Console Output]
+    end
+```
+
+## Key Components
+
+1. **Input Processing**
+   ```python
+   def __init__(self, regions: List[str], fix_issues: bool = False):
+       self.regions = regions
+       self.fix_issues = fix_issues
+   ```
+
+2. **Security Checks**
+   - **S3 Bucket Security**
+     ```python
+     def check_s3_buckets(self):
+         # Checks public access and bucket policies
+     ```
+   - **Security Groups**
+     ```python
+     def check_security_groups(self, region: str):
+         # Checks for dangerous inbound rules
+     ```
+   - **IAM Security**
+     ```python
+     def check_iam_policies(self):
+         # Checks for overly permissive policies
+     def check_iam_access_keys(self):
+         # Checks for old access keys
+     ```
+   - **RDS Security**
+     ```python
+     def check_rds_encryption(self, region: str):
+         # Checks database encryption status
+     ```
+
+3. **Report Generation**
+   ```python
+   def add_finding(self, service: str, resource_id: str, issue: str, severity: str):
+       # Adds security findings to report
+   def generate_report(self, output_file='findings.csv'):
+       # Generates CSV report
+   ```
+
+## Usage
+
+```bash
+# Basic scan
+python src/aws_security_scanner.py
+
+# Multi-region scan
+python src/aws_security_scanner.py --regions us-east-1 us-west-2
+
+# With auto-fix enabled
+python src/aws_security_scanner.py --fix
