@@ -190,116 +190,127 @@ findings = [
 
 ## Architecture Overview
 
-The AWS Security Scanner follows a modular architecture designed for extensibility and reliability.
-
 ```mermaid
 flowchart TB
-    subgraph Input ["Input Layer"]
+    subgraph input[Input Layer]
+        direction TB
         CLI[Command Line Interface]
         Config[Configuration Manager]
+        Scanner[AWS Security Scanner]
         CLI --> Config
-        Config --> Scanner[AWS Security Scanner]
+        Config --> Scanner
     end
 
-    subgraph AWS_Services ["AWS Service Scanners"]
-        Scanner --> S3[S3 Security Scanner]
-        Scanner --> SG[Security Group Scanner]
-        Scanner --> IAM[IAM Security Scanner]
-        Scanner --> RDS[RDS Security Scanner]
-
-        subgraph S3_Checks ["S3 Security Checks"]
+    subgraph aws[AWS Service Scanners]
+        direction TB
+        subgraph s3[S3 Security Checks]
+            S3[S3 Security Scanner]
             S3 --> S3_1[Public Access<br/>Detection]
             S3 --> S3_2[Bucket Policy<br/>Analysis]
             S3 --> S3_3[Encryption<br/>Verification]
         end
 
-        subgraph SG_Checks ["Security Group Checks"]
+        subgraph sg[Security Group Checks]
+            SG[Security Group Scanner]
             SG --> SG_1[Open Port<br/>Detection]
             SG --> SG_2[CIDR Rule<br/>Analysis]
             SG --> SG_3[Inbound Rule<br/>Verification]
         end
 
-        subgraph IAM_Checks ["IAM Security Checks"]
+        subgraph iam[IAM Security Checks]
+            IAM[IAM Security Scanner]
             IAM --> IAM_1[Access Key<br/>Age Monitor]
             IAM --> IAM_2[Policy<br/>Analysis]
             IAM --> IAM_3[Credential<br/>Validation]
         end
 
-        subgraph RDS_Checks ["RDS Security Checks"]
+        subgraph rds[RDS Security Checks]
+            RDS[RDS Security Scanner]
             RDS --> RDS_1[Encryption<br/>Status]
             RDS --> RDS_2[Security Group<br/>Configuration]
         end
     end
 
-    subgraph Output ["Output Processing"]
-        S3_1 & S3_2 & S3_3 --> Collector[Finding Collector]
-        SG_1 & SG_2 & SG_3 --> Collector
-        IAM_1 & IAM_2 & IAM_3 --> Collector
-        RDS_1 & RDS_2 --> Collector
+    Scanner --> s3
+    Scanner --> sg
+    Scanner --> iam
+    Scanner --> rds
 
-        Collector --> Reporter[Report Generator]
-        Reporter --> CSV[CSV Report]
-        Reporter --> Console[Console Output]
-        Reporter --> Logger[Detailed Logs]
+    subgraph output[Output Processing]
+        direction TB
+        Collector[Finding Collector]
+        Reporter[Report Generator]
+        CSV[CSV Report]
+        Console[Console Output]
+        Logs[Detailed Logs]
+        
+        Collector --> Reporter
+        Reporter --> CSV
+        Reporter --> Console
+        Reporter --> Logs
     end
 
+    S3_1 & S3_2 & S3_3 --> Collector
+    SG_1 & SG_2 & SG_3 --> Collector
+    IAM_1 & IAM_2 & IAM_3 --> Collector
+    RDS_1 & RDS_2 --> Collector
+
+    %% Styling
     classDef default fill:#2A2A2A,stroke:#666,color:#fff
-    classDef input fill:#1E3F66,stroke:#666,color:#fff
-    classDef aws fill:#232F3E,stroke:#666,color:#fff
-    classDef output fill:#2E4057,stroke:#666,color:#fff
+    classDef inputStyle fill:#1E3F66,stroke:#666,color:#fff
+    classDef awsStyle fill:#232F3E,stroke:#666,color:#fff
+    classDef outputStyle fill:#2E4057,stroke:#666,color:#fff
+    classDef scannerStyle fill:#1a1a1a,stroke:#666,color:#fff
     
-    class CLI,Config input
-    class S3,SG,IAM,RDS,S3_Checks,SG_Checks,IAM_Checks,RDS_Checks aws
-    class Collector,Reporter,CSV,Console,Logger output
+    class CLI,Config inputStyle
+    class Scanner scannerStyle
+    class S3,SG,IAM,RDS,s3,sg,iam,rds awsStyle
+    class Collector,Reporter,CSV,Console,Logs outputStyle
 ```
 
 ### Component Details
 
 #### 1. Input Layer
-- **Command Line Interface**: Processes user inputs and command flags
-- **Configuration Manager**: Handles AWS credentials, region selection, and scan options
-- **AWS Security Scanner**: Core orchestrator that coordinates security checks
+- **Command Line Interface**: Entry point for user commands and parameters
+- **Configuration Manager**: Manages AWS credentials and scan configurations
+- **AWS Security Scanner**: Core orchestrator for security checks
 
 #### 2. AWS Service Scanners
-- **S3 Security Scanner**:
-  - Public access detection through ACL analysis
-  - Bucket policy security assessment
-  - Encryption configuration verification
-  
-- **Security Group Scanner**:
-  - Open port detection (SSH, RDP, etc.)
-  - CIDR rule analysis for overly permissive access
-  - Inbound rule security verification
-  
-- **IAM Security Scanner**:
-  - Access key age monitoring and rotation checks
-  - Policy analysis for excessive permissions
-  - Credential validation and security assessment
-  
-- **RDS Security Scanner**:
-  - Database encryption status verification
-  - Security group configuration analysis
+Each service scanner operates independently and performs specialized security checks:
+
+##### S3 Security Scanner
+- Public Access Detection
+- Bucket Policy Analysis
+- Encryption Verification
+
+##### Security Group Scanner
+- Open Port Detection (ports 22, 3389)
+- CIDR Rule Analysis (0.0.0.0/0)
+- Inbound Rule Verification
+
+##### IAM Security Scanner
+- Access Key Age Monitoring
+- Policy Permission Analysis
+- Credential Validation
+
+##### RDS Security Scanner
+- Encryption Status Check
+- Security Group Configuration
 
 #### 3. Output Processing
-- **Finding Collector**: Aggregates security findings from all scanners
-- **Report Generator**: 
-  - Generates structured CSV reports
-  - Provides real-time console feedback
-  - Maintains detailed logging for auditing
-  
-### Security Check Flow
-1. User initiates scan through CLI with specific parameters
-2. Configuration Manager validates and processes scan settings
-3. AWS Security Scanner orchestrates parallel security checks
-4. Service-specific scanners perform detailed security analysis
-5. Findings are collected, processed, and prioritized
-6. Results are output in multiple formats for different use cases
+- **Finding Collector**: Central aggregation point for all security findings
+- **Report Generator**: Processes and formats findings
+- **Output Formats**:
+  - CSV Report: Detailed findings in structured format
+  - Console Output: Real-time scan results
+  - Detailed Logs: Complete audit trail
 
-### Error Handling
-- Comprehensive error catching and logging
-- Graceful degradation on service unavailability
-- Detailed error reporting for troubleshooting
-- Continuous operation despite non-critical failures
+### Security Check Flow
+1. User input through Command Line Interface
+2. Configuration validation and AWS credentials check
+3. Parallel execution of security scanners
+4. Real-time finding collection and analysis
+5. Comprehensive report generation
 
 ## Key Components
 
