@@ -192,125 +192,107 @@ findings = [
 
 ```mermaid
 flowchart TB
-    subgraph input[Input Layer]
-        direction TB
+    subgraph Input ["Input Layer"]
         CLI[Command Line Interface]
-        Config[Configuration Manager]
-        Scanner[AWS Security Scanner]
-        CLI --> Config
-        Config --> Scanner
+        CLI --> Args["Arguments<br/>--regions<br/>--fix"]
+        Args --> Scanner[AWS Security Scanner]
     end
 
-    subgraph aws[AWS Service Scanners]
-        direction TB
-        subgraph s3[S3 Security Checks]
-            S3[S3 Security Scanner]
-            S3 --> S3_1[Public Access<br/>Detection]
-            S3 --> S3_2[Bucket Policy<br/>Analysis]
-            S3 --> S3_3[Encryption<br/>Verification]
-        end
+    subgraph Security ["Security Checks"]
+        Scanner --> S3[S3 Bucket Check]
+        Scanner --> SG[Security Group Check]
+        Scanner --> IAM[IAM Check]
+        Scanner --> RDS[RDS Check]
 
-        subgraph sg[Security Group Checks]
-            SG[Security Group Scanner]
-            SG --> SG_1[Open Port<br/>Detection]
-            SG --> SG_2[CIDR Rule<br/>Analysis]
-            SG --> SG_3[Inbound Rule<br/>Verification]
-        end
-
-        subgraph iam[IAM Security Checks]
-            IAM[IAM Security Scanner]
-            IAM --> IAM_1[Access Key<br/>Age Monitor]
-            IAM --> IAM_2[Policy<br/>Analysis]
-            IAM --> IAM_3[Credential<br/>Validation]
-        end
-
-        subgraph rds[RDS Security Checks]
-            RDS[RDS Security Scanner]
-            RDS --> RDS_1[Encryption<br/>Status]
-            RDS --> RDS_2[Security Group<br/>Configuration]
-        end
+        S3 --> S3_Checks["• Public Access<br/>• Bucket Policies"]
+        SG --> SG_Checks["• Open Ports (22, 3389)<br/>• 0.0.0.0/0 Rules"]
+        IAM --> IAM_Checks["• Access Key Age<br/>• Policy Permissions"]
+        RDS --> RDS_Checks["• Encryption Status<br/>• Security Groups"]
     end
 
-    Scanner --> s3
-    Scanner --> sg
-    Scanner --> iam
-    Scanner --> rds
+    subgraph Output ["Findings"]
+        S3_Checks --> Findings[Finding Collection]
+        SG_Checks --> Findings
+        IAM_Checks --> Findings
+        RDS_Checks --> Findings
 
-    subgraph output[Output Processing]
-        direction TB
-        Collector[Finding Collector]
-        Reporter[Report Generator]
-        CSV[CSV Report]
-        Console[Console Output]
-        Logs[Detailed Logs]
-        
-        Collector --> Reporter
-        Reporter --> CSV
-        Reporter --> Console
-        Reporter --> Logs
+        Findings --> CSV[findings.csv]
+        Findings --> Console[Console Output<br/>Color-coded Severity]
     end
 
-    S3_1 & S3_2 & S3_3 --> Collector
-    SG_1 & SG_2 & SG_3 --> Collector
-    IAM_1 & IAM_2 & IAM_3 --> Collector
-    RDS_1 & RDS_2 --> Collector
-
-    %% Styling
-    classDef default fill:#2A2A2A,stroke:#666,color:#fff
-    classDef inputStyle fill:#1E3F66,stroke:#666,color:#fff
-    classDef awsStyle fill:#232F3E,stroke:#666,color:#fff
-    classDef outputStyle fill:#2E4057,stroke:#666,color:#fff
-    classDef scannerStyle fill:#1a1a1a,stroke:#666,color:#fff
-    
-    class CLI,Config inputStyle
-    class Scanner scannerStyle
-    class S3,SG,IAM,RDS,s3,sg,iam,rds awsStyle
-    class Collector,Reporter,CSV,Console,Logs outputStyle
+    style CLI fill:#1a1a1a,stroke:#333,color:#fff
+    style Args fill:#1a1a1a,stroke:#333,color:#fff
+    style Scanner fill:#1a1a1a,stroke:#333,color:#fff
+    style S3 fill:#1a1a1a,stroke:#333,color:#fff
+    style SG fill:#1a1a1a,stroke:#333,color:#fff
+    style IAM fill:#1a1a1a,stroke:#333,color:#fff
+    style RDS fill:#1a1a1a,stroke:#333,color:#fff
+    style S3_Checks fill:#1a1a1a,stroke:#333,color:#fff
+    style SG_Checks fill:#1a1a1a,stroke:#333,color:#fff
+    style IAM_Checks fill:#1a1a1a,stroke:#333,color:#fff
+    style RDS_Checks fill:#1a1a1a,stroke:#333,color:#fff
+    style Findings fill:#1a1a1a,stroke:#333,color:#fff
+    style CSV fill:#1a1a1a,stroke:#333,color:#fff
+    style Console fill:#1a1a1a,stroke:#333,color:#fff
 ```
 
 ### Component Details
 
 #### 1. Input Layer
-- **Command Line Interface**: Entry point for user commands and parameters
-- **Configuration Manager**: Manages AWS credentials and scan configurations
-- **AWS Security Scanner**: Core orchestrator for security checks
+- **Command Line Interface**: Entry point for scanner execution
+- **Arguments**:
+  - `--regions`: List of AWS regions to scan
+  - `--fix`: Enable automatic issue remediation
 
-#### 2. AWS Service Scanners
-Each service scanner operates independently and performs specialized security checks:
+#### 2. Security Checks
+- **S3 Bucket Security**:
+  ```python
+  def check_s3_buckets(self):
+      # Scans buckets for public access
+      # Validates bucket policies
+  ```
 
-##### S3 Security Scanner
-- Public Access Detection
-- Bucket Policy Analysis
-- Encryption Verification
+- **Security Group Analysis**:
+  ```python
+  def check_security_groups(self, region):
+      # Detects open ports (22, 3389)
+      # Identifies 0.0.0.0/0 rules
+  ```
 
-##### Security Group Scanner
-- Open Port Detection (ports 22, 3389)
-- CIDR Rule Analysis (0.0.0.0/0)
-- Inbound Rule Verification
+- **IAM Security**:
+  ```python
+  def check_iam_access_keys(self):
+      # Monitors access key age
+      # Checks for rotation needs
+  ```
 
-##### IAM Security Scanner
-- Access Key Age Monitoring
-- Policy Permission Analysis
-- Credential Validation
-
-##### RDS Security Scanner
-- Encryption Status Check
-- Security Group Configuration
+- **RDS Security**:
+  ```python
+  def check_rds_encryption(self, region):
+      # Verifies encryption status
+      # Validates security groups
+  ```
 
 #### 3. Output Processing
-- **Finding Collector**: Central aggregation point for all security findings
-- **Report Generator**: Processes and formats findings
-- **Output Formats**:
-  - CSV Report: Detailed findings in structured format
-  - Console Output: Real-time scan results
-  - Detailed Logs: Complete audit trail
+- **Finding Collection**:
+  ```python
+  def add_finding(self, service, resource_id, issue, severity):
+      # Collects security findings
+  ```
+
+- **Report Generation**:
+  ```python
+  def generate_report(self, output_file='findings.csv'):
+      # Creates CSV report
+      # Displays console output
+  ```
 
 ### Security Check Flow
-1. User input through Command Line Interface
-2. Configuration validation and AWS credentials check
-3. Parallel execution of security scanners
-4. Real-time finding collection and analysis
-5. Comprehensive report generation
+1. User provides regions and fix options via CLI
+2. Scanner initializes with provided configuration
+3. Security checks run for each AWS service
+4. Findings are collected and severity assigned
+5. Results output to CSV and console with color coding
 
 ## Key Components
 
