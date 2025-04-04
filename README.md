@@ -33,35 +33,42 @@ The AWS Security Scanner performs automated security checks across multiple AWS 
 ## 📊 Architecture
 
 ```mermaid
-graph TB
-    subgraph Input ["Input Layer"]
+flowchart TB
+    subgraph input[Input]
         CLI[Command Line Interface]
         CLI --> Scanner[Security Scanner]
     end
 
-    subgraph Checks ["Security Checks"]
+    subgraph checks[Security Checks]
         Scanner --> S3[S3 Bucket Check]
         Scanner --> SG[Security Group Check]
         Scanner --> IAM[IAM Check]
         Scanner --> RDS[RDS Check]
     end
 
-    subgraph Details ["Security Validations"]
-        S3 --> S3_Checks["S3 Security<br/>• Public ACLs<br/>• Bucket Policies"]
-        SG --> SG_Checks["Security Groups<br/>• Open Ports (22, 3389)<br/>• 0.0.0.0/0 Rules"]
-        IAM --> IAM_Checks["IAM Security<br/>• Policy Permissions<br/>• Access Key Age"]
-        RDS --> RDS_Checks["RDS Security<br/>• Encryption Status"]
+    subgraph validations[Security Validations]
+        S3 --> S3_1[Public ACLs]
+        S3 --> S3_2[Bucket Policies]
+        
+        SG --> SG_1[Open Ports 22, 3389]
+        SG --> SG_2[0.0.0.0/0 Rules]
+        
+        IAM --> IAM_1[Policy Permissions]
+        IAM --> IAM_2[Access Key Age]
+        
+        RDS --> RDS_1[Encryption Status]
     end
 
-    subgraph Output ["Output Layer"]
-        S3_Checks & SG_Checks & IAM_Checks & RDS_Checks --> Report[Report Generator]
+    subgraph output[Report Generation]
+        S3_1 & S3_2 & SG_1 & SG_2 & IAM_1 & IAM_2 & RDS_1 --> Report[Report Generator]
         Report --> CSV[findings.csv]
         Report --> Console[Console Output]
     end
 
-    classDef default fill:#2A2A2A,stroke:#7A7A7A,color:#fff
-    classDef subgraph fill:#1A1A1A,stroke:#505050,color:#fff
-    class Input,Checks,Details,Output subgraph
+    style input fill:#1a1a1a,stroke:#333,stroke-width:2px
+    style checks fill:#1a1a1a,stroke:#333,stroke-width:2px
+    style validations fill:#1a1a1a,stroke:#333,stroke-width:2px
+    style output fill:#1a1a1a,stroke:#333,stroke-width:2px
 ```
 
 ## 🚀 Quick Start
