@@ -34,15 +34,34 @@ The AWS Security Scanner performs automated security checks across multiple AWS 
 
 ```mermaid
 graph TB
-    CLI[Command Line Interface] --> Scanner[AWS Security Scanner]
-    
-    Scanner --> S3[S3 Security]
-    Scanner --> SG[Security Groups]
-    Scanner --> IAM[IAM Security]
-    Scanner --> RDS[RDS Security]
-    
-    S3 & SG & IAM & RDS --> Report[Report Generator]
-    Report --> Output[Security Findings]
+    subgraph Input ["Input Layer"]
+        CLI[Command Line Interface]
+        CLI --> Scanner[Security Scanner]
+    end
+
+    subgraph Checks ["Security Checks"]
+        Scanner --> S3[S3 Bucket Check]
+        Scanner --> SG[Security Group Check]
+        Scanner --> IAM[IAM Check]
+        Scanner --> RDS[RDS Check]
+    end
+
+    subgraph Details ["Security Validations"]
+        S3 --> S3_Checks["S3 Security<br/>• Public ACLs<br/>• Bucket Policies"]
+        SG --> SG_Checks["Security Groups<br/>• Open Ports (22, 3389)<br/>• 0.0.0.0/0 Rules"]
+        IAM --> IAM_Checks["IAM Security<br/>• Policy Permissions<br/>• Access Key Age"]
+        RDS --> RDS_Checks["RDS Security<br/>• Encryption Status"]
+    end
+
+    subgraph Output ["Output Layer"]
+        S3_Checks & SG_Checks & IAM_Checks & RDS_Checks --> Report[Report Generator]
+        Report --> CSV[findings.csv]
+        Report --> Console[Console Output]
+    end
+
+    classDef default fill:#2A2A2A,stroke:#7A7A7A,color:#fff
+    classDef subgraph fill:#1A1A1A,stroke:#505050,color:#fff
+    class Input,Checks,Details,Output subgraph
 ```
 
 ## 🚀 Quick Start
